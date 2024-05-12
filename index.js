@@ -1,12 +1,15 @@
 const express = require('express')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
 require('dotenv').config()
 
 const app = express();
 const port = process.env.PORT || 5000;
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: ['http://localhost:5173',
+        'http://localhost:5174',
+        'https://impact-connect-19304.firebaseapp.com',
+        'https://impact-connect-19304.web.app'],
     credentials: true,
     optionSuccessStatus: 200,
 }
@@ -38,17 +41,36 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
 
+        // collection
+
         const jobPostCollection = client.db('impactConnect').collection('jobPost');
 
+
+        // add job post
         app.post('/add-job-post', async (req, res) => {
-            const user = req.body;
-            const result = await jobPostCollection.insertOne(user)
+            const job = req.body;
+            const result = await jobPostCollection.insertOne(job)
             res.send(result)
 
         })
 
+        app.get('/all-job-post', async (req, res) => {
+            const result = await jobPostCollection.find().toArray();
+            res.send(result)
+        })
 
+        // shorting api upcoming deadline
+        app.get('/add-job-post', async (req, res) => {
+            const result = await jobPostCollection.find().sort({ 'deadline': -1 }).toArray();
+            res.send(result)
+        })
 
+        app.get('/add-job-post/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await jobPostCollection.findOne(query)
+            res.send(result)
+        })
 
 
 
