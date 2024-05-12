@@ -82,6 +82,15 @@ async function run() {
 
         })
 
+        // my requested job api 
+
+        app.get('/request-volunteer-job/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { loggedInUserEmail: (email) }
+            const result = await requestVolunteerCollection.find(query).toArray()
+            res.send(result)
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
