@@ -44,6 +44,7 @@ async function run() {
         // collection
 
         const jobPostCollection = client.db('impactConnect').collection('jobPost');
+        const requestVolunteerCollection = client.db('impactConnect').collection('request-volunteer-job');
 
 
         // add job post
@@ -72,6 +73,14 @@ async function run() {
             res.send(result)
         })
 
+        // request volunteer job to adding database
+
+        app.post('/request-volunteer-job', async (req, res) => {
+            const requestJob = req.body;
+            const result = await requestVolunteerCollection.insertOne(requestJob)
+            res.send(result)
+
+        })
 
 
         // Send a ping to confirm a successful connection
