@@ -82,7 +82,7 @@ async function run() {
 
         })
 
-        // my requested job api 
+        // my requested job api data fetching
 
         app.get('/request-volunteer-job/:email', async (req, res) => {
             const email = req.params.email;
@@ -91,6 +91,15 @@ async function run() {
             res.send(result)
         })
 
+        // my job post 
+
+
+        app.get('/my-job-post/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { organizerEmail: (email) }
+            const result = await jobPostCollection.find(query).toArray()
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
