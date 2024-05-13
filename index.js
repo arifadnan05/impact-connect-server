@@ -109,6 +109,23 @@ async function run() {
             const result = await jobPostCollection.deleteOne(query)
             res.send(result)
         })
+        // update job single data
+
+        app.put('/my-job-post/:id', async(req, res) => {
+            const id = req.params.id;
+            const jobData = req.body;
+            console.log(jobData)
+            console.log(jobData)
+            const query = { _id: new ObjectId(id) }
+            const options = {upsert: true}
+            const updateDoc = {
+                $set:{
+                    ...jobData
+                }
+            }
+            const result = await jobPostCollection.updateOne(query, updateDoc, options)
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
