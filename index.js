@@ -91,13 +91,22 @@ async function run() {
             res.send(result)
         })
 
-        // my job post 
+        // get all job posted by specific user 
 
 
-        app.get('/my-job-post/:email', async (req, res) => {
+        app.get('/my-job-posts/:email', async (req, res) => {
             const email = req.params.email;
             const query = { organizerEmail: (email) }
             const result = await jobPostCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // delete job single job post
+
+        app.delete('/my-job-post/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await jobPostCollection.deleteOne(query)
             res.send(result)
         })
 
