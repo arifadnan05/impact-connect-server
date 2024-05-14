@@ -1,6 +1,8 @@
 const express = require('express')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 require('dotenv').config()
 
 const app = express();
@@ -8,10 +10,9 @@ const port = process.env.PORT || 5000;
 const corsOptions = {
     origin: ['http://localhost:5173',
         'http://localhost:5174',
-        'https://impactconnect.surge.sh',
         'https://impact-connect-19304.web.app',
         'https://impact-connect-19304.firebaseapp.com'
-        ],
+    ],
     credentials: true,
     optionSuccessStatus: 200,
 }
@@ -19,7 +20,26 @@ const corsOptions = {
 
 app.use(cors(corsOptions))
 app.use(express.json())
+app.use(cookieParser())
 
+
+// verify jwt middleware
+
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token
+    if (!token) return res.status(401).send({ message: 'unauthorize access' })
+    if (token) {
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+            if (err) {
+                console.log(err)
+                return res.status(401).send({ message: 'unauthorize access' })
+            }
+            console.log(decoded)
+            next()
+        })
+    }
+
+}
 
 
 
@@ -47,6 +67,37 @@ async function run() {
 
         const jobPostCollection = client.db('impactConnect').collection('jobPost');
         const requestVolunteerCollection = client.db('impactConnect').collection('request-volunteer-job');
+
+
+
+        // jwt token implement
+
+
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: "365d"
+            })
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+            })
+                .send({ success: true })
+        })
+
+        // clear cookie when user logout
+
+        app.get('/logout', (req, res) => {
+            res.clearCookie('token', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 0,
+            })
+                .send({ success: true })
+        })
+
 
 
         // add job post
@@ -78,6 +129,9 @@ async function run() {
         // request volunteer job to adding database
 
         app.post('/request-volunteer-job', async (req, res) => {
+
+            const token = req.cookies.token;
+            console.log(token)
             const requestJob = req.body;
             const result = await requestVolunteerCollection.insertOne(requestJob)
             res.send(result)
@@ -86,7 +140,7 @@ async function run() {
 
         // my requested job api data fetching
 
-        app.get('/request-volunteer-job/:email', async (req, res) => {
+        app.get('/request-volunteer-job/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             const query = { loggedInUserEmail: (email) }
             const result = await requestVolunteerCollection.find(query).toArray()
@@ -107,8 +161,8 @@ async function run() {
         // get all job posted by specific user 
 
 
-        app.get('/my-job-posts/:email', async (req, res) => {
-            const email = req.params.email;
+        app.get('/my-job-posts/:email', verifyToken, async (req, res) => {
+            const email = req.params.email
             const query = { organizerEmail: (email) }
             const result = await jobPostCollection.find(query).toArray()
             res.send(result)
@@ -124,15 +178,14 @@ async function run() {
         })
         // update job single data
 
-        app.put('/my-job-post/:id', async(req, res) => {
+        app.put('/my-job-post/:id', async (req, res) => {
             const id = req.params.id;
             const jobData = req.body;
             console.log(jobData)
-            console.log(jobData)
             const query = { _id: new ObjectId(id) }
-            const options = {upsert: true}
+            const options = { upsert: true }
             const updateDoc = {
-                $set:{
+                $set: {
                     ...jobData
                 }
             }
